@@ -3,17 +3,17 @@
 Your planner, notes, assignments, and study timer — ready to use on another computer.
 
 <a id="download-lockin"></a>
-## [⬇ Download for Mac](https://github.com/cchow375/LockIn-Releases/releases/download/v1.8.0-20260929232850/LockIn-1.8.0-20260929232850.zip)
+## [⬇ Download for Mac](https://github.com/cchow375/LockIn-Releases/releases/download/v1.9.0-20261001172541/LockIn-1.9.0-20261001172541.zip)
 
 macOS 13 or newer · Intel and Apple silicon · ZIP download
 
-## [⬇ Download for Windows](https://github.com/cchow375/LockIn-Releases/releases/download/v1.8.0-20260929232850/LockIn-1.8.0-20260929232850-Windows-x64.zip)
+## [⬇ Download for Windows](https://github.com/cchow375/LockIn-Releases/releases/download/v1.9.0-20261001172541/LockIn-1.9.0-20261001172541-Windows-x64.zip)
 
 Windows 11 · x64 · ZIP download
 
-**Version 1.8.0.** Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
+**Version 1.9.0.** Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
 
-[Install instructions](#install-lockin) · [Use another computer](#use-another-computer) · [Help](%28C%29%20Getting%20Started.md) · [What's new](https://github.com/cchow375/LockIn-Releases/releases/tag/v1.8.0-20260929232850)
+[Install instructions](#install-lockin) · [Use another computer](#use-another-computer) · [Help](%28C%29%20Getting%20Started.md) · [What's new](https://github.com/cchow375/LockIn-Releases/releases/tag/v1.9.0-20261001172541)
 
 ## Install LockIn
 
