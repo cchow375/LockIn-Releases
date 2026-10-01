@@ -5,15 +5,15 @@ Your planner, notes, assignments, and study timer — ready to use on another co
 <a id="download-lockin"></a>
 ## [⬇ Download for Mac]({{MAC_URL}})
 
-macOS 13 or newer · Intel and Apple silicon · ZIP download
+macOS 13 or newer · Intel and Apple silicon · ZIP download · Version {{VERSION}}
 
 ## [⬇ Download for Windows]({{WINDOWS_URL}})
 
-Windows 11 · x64 · ZIP download
+Windows 11 · x64 · ZIP download · Version {{WINDOWS_VERSION}}
 
-**Version {{VERSION}}.** Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
+Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
 
-[Install instructions](#install-lockin) · [Use another computer](#use-another-computer) · [Help](%28C%29%20Getting%20Started.md) · [What's new]({{RELEASE_URL}})
+[Install instructions](#install-lockin) · [Use another computer](#use-another-computer) · [Help](%28C%29%20Getting%20Started.md) · [Mac changes]({{RELEASE_URL}}) · [Windows changes]({{WINDOWS_RELEASE_URL}})
 
 ## Install LockIn
 
@@ -41,7 +41,7 @@ Your planner syncs through your account. Google Calendar and Canvas connections 
 
 ## Get future updates
 
-**Bookmark [this page](https://github.com/cchow375/LockIn-Releases#download-lockin).** The Mac and Windows links at the top update when a new combined release is published.
+**Bookmark [this page](https://github.com/cchow375/LockIn-Releases#download-lockin).** Each link points to the latest published build for that platform. Mac updates may arrive before the next Windows build.
 
 - **Mac:** choose **LockIn → Check for Updates**, or use the app's automatic update prompt. Finish the installation/relaunch prompt.
 - **Windows:** use the verified download offered in LockIn. Quit the app, extract the new ZIP into a new folder, then open its **LockIn.exe**.

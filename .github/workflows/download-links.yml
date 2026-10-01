@@ -8,7 +8,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/download-links.yml'
-      - '(C) Scripts/**'
+      - 'Scripts/**'
       - '(C) Download Page Template.md'
 permissions:
   contents: read
@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Verify link generation and safe failure behavior
-        run: python3 '(C) Scripts/(C) download-page-tests.py'
+        run: python3 'Scripts/download-page-tests.py'
   refresh:
     if: github.event_name != 'pull_request'
     needs: validate
@@ -32,12 +32,12 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      - name: Refresh only the front-page links from the latest combined release
+      - name: Refresh each platform's front-page link from verified release metadata
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           git pull --ff-only origin main
-          python3 '(C) Scripts/(C) download-page.py' --repo "$GITHUB_REPOSITORY" --output README.md
+          python3 'Scripts/download-page.py' --repo "$GITHUB_REPOSITORY" --output README.md
           if git diff --quiet -- README.md; then exit 0; fi
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
