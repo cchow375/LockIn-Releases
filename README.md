@@ -9,7 +9,7 @@ macOS 13 or newer · Intel and Apple silicon · ZIP download · Version 1.9.0
 
 ## [⬇ Download for Windows](https://github.com/cchow375/LockIn-Releases/releases/download/v1.9.0-20261001172541/LockIn-1.9.0-20261001172541-Windows-x64.zip)
 
-Windows 11 · x64 · ZIP download · Version 1.9.0
+Windows 11 · x64 · ZIP download · Version 1.9.0 · Build 20261001172541
 
 Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
 
