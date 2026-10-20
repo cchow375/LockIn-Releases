@@ -5,11 +5,11 @@ Your planner, notes, assignments, and study timer — ready to use on another co
 <a id="download-lockin"></a>
 ## [⬇ Download for Mac]({{MAC_URL}})
 
-macOS 13 or newer · Intel and Apple silicon · ZIP download · Version {{VERSION}}
+macOS {{MINIMUM_MACOS}} or newer · Intel and Apple silicon · ZIP download · Version {{VERSION}}
 
 ## [⬇ Download for Windows]({{WINDOWS_URL}})
 
-Windows 11 · x64 · ZIP download · Version {{WINDOWS_VERSION}}
+Windows 11 · x64 · ZIP download · Version {{WINDOWS_VERSION}} · Build {{WINDOWS_BUILD}}
 
 Click your computer's download link above. You do not need a GitHub account, Xcode, Git, or any developer tools.
 
