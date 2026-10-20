@@ -20,7 +20,9 @@ class DownloadPageTests(unittest.TestCase):
         names = page.REQUIRED_SUPPORT | {f"LockIn-{self.version}-{self.build}.zip", f"LockIn-{self.version}-{self.build}-Windows-x64.zip"}
         self.release = {"tag_name": self.tag, "draft": False, "prerelease": False,
                         "assets": [{"name": name, "size": 100, "state": "uploaded", "browser_download_url": f"https://github.com/{self.repo}/releases/download/{self.tag}/{name}"} for name in names]}
-        self.template = "Mac: {{MAC_URL}}\nWindows: {{WINDOWS_URL}}\nMac {{VERSION}} / {{BUILD}}\nWindows {{WINDOWS_VERSION}} / {{WINDOWS_BUILD}}\n{{RELEASE_URL}}\n{{WINDOWS_RELEASE_URL}}\n"
+        self.manifest = {"schemaVersion": 1, "repo": self.repo, "version": self.version, "build": self.build, "tag": self.tag,
+                         "windowsAsset": f"LockIn-{self.version}-{self.build}-Windows-x64.zip"}
+        self.template = "Mac: {{MAC_URL}}\nWindows: {{WINDOWS_URL}}\nmacOS {{MINIMUM_MACOS}} or newer\nMac {{VERSION}} / {{BUILD}}\nWindows {{WINDOWS_VERSION}} / {{WINDOWS_BUILD}}\n{{RELEASE_URL}}\n{{WINDOWS_RELEASE_URL}}\n"
 
     def held_windows(self):
         mac = copy.deepcopy(self.release)
@@ -42,6 +44,23 @@ class DownloadPageTests(unittest.TestCase):
         self.assertIn(f"/releases/download/{self.tag}/LockIn-{self.version}-{self.build}.zip", result)
         self.assertIn(f"/releases/download/{self.tag}/LockIn-{self.version}-{self.build}-Windows-x64.zip", result)
         self.assertNotIn("{{", result)
+
+    def test_legacy_manifest_without_requirement_keeps_macos_13(self):
+        result = page.render(self.release, self.repo, self.template, self.manifest)
+        self.assertIn("macOS 13 or newer", result)
+
+    def test_new_manifest_displays_its_macos_requirement_for_both_release_types(self):
+        result = page.render(self.release, self.repo, self.template, {**self.manifest, "minimumMacOS": "14.0"})
+        self.assertIn("macOS 14.0 or newer", result)
+        mac, manifest, windows = self.held_windows()
+        result = page.render(mac, self.repo, self.template, {**manifest, "minimumMacOS": "14"}, windows)
+        self.assertIn("macOS 14 or newer", result)
+        self.assertIn(f"Windows {manifest['windowsCarryForward']['version']} / {manifest['windowsCarryForward']['build']}", result)
+
+    def test_malformed_macos_requirement_is_rejected(self):
+        for requirement in (None, True, 14, "", "014.0", "14..0", "14.0.0.1", "14\n", "14 or newer", "14<script>", "14.0; echo bad", "1" * 33):
+            with self.subTest(requirement=requirement), self.assertRaisesRegex(ValueError, "minimum macOS"):
+                page.render(self.release, self.repo, self.template, {**self.manifest, "minimumMacOS": requirement})
 
     def test_draft_prerelease_and_bad_tags_are_rejected(self):
         for mutation in [{"draft": True}, {"prerelease": True}, {"tag_name": "v1.8.0-[bad]"}]:
@@ -72,14 +91,48 @@ class DownloadPageTests(unittest.TestCase):
                 page.main(["--repo", self.repo, "--release-json", str(metadata), "--template", str(template), "--output", str(output)])
             self.assertEqual(output.read_text(), "Keep this page.")
 
-    def test_live_mode_only_reads_github_and_writes_requested_markdown(self):
-        with tempfile.TemporaryDirectory() as temporary, patch.object(page.subprocess, "run") as run:
+    def test_live_combined_release_fetches_manifest_before_rendering_its_requirement(self):
+        with tempfile.TemporaryDirectory() as temporary, patch.object(page.subprocess, "run") as run, patch.object(page.urllib.request, "urlopen") as fetch:
             root = Path(temporary); template = root / "template.md"; template.write_text(self.template)
             run.return_value.stdout = json.dumps(self.release)
+            fetch.return_value.__enter__.return_value.read.return_value = json.dumps({**self.manifest, "minimumMacOS": "14.0"}).encode()
             output = root / "README.md"
             page.main(["--repo", self.repo, "--template", str(template), "--output", str(output)])
-            self.assertEqual(run.call_args.args[0], ["gh", "api", f"repos/{self.repo}/releases/latest"])
+            run.assert_called_once_with(["gh", "api", f"repos/{self.repo}/releases/latest"], check=True, capture_output=True, text=True)
+            fetch.assert_called_once_with(f"https://github.com/{self.repo}/releases/download/{self.tag}/release.json", timeout=30)
             self.assertIn(self.tag, output.read_text())
+            self.assertIn("macOS 14.0 or newer", output.read_text())
+
+    def test_saved_combined_metadata_requires_its_manifest_and_preserves_existing_page(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); output = root / "README.md"; output.write_text("Keep the working downloads.")
+            metadata = root / "latest.json"; metadata.write_text(json.dumps(self.release))
+            template = root / "template.md"; template.write_text(self.template)
+            with self.assertRaisesRegex(ValueError, "--manifest-json"):
+                page.main(["--repo", self.repo, "--release-json", str(metadata), "--template", str(template), "--output", str(output)])
+            self.assertEqual(output.read_text(), "Keep the working downloads.")
+
+    def test_live_combined_release_rejects_non_object_manifest_without_replacing_page(self):
+        for manifest in (None, [], "14"):
+            with self.subTest(manifest=manifest), tempfile.TemporaryDirectory() as temporary, patch.object(page.subprocess, "run") as run, patch.object(page.urllib.request, "urlopen") as fetch:
+                root = Path(temporary); template = root / "template.md"; template.write_text(self.template)
+                output = root / "README.md"; output.write_text("Keep the working downloads.")
+                run.return_value.stdout = json.dumps(self.release)
+                fetch.return_value.__enter__.return_value.read.return_value = json.dumps(manifest).encode()
+                with self.assertRaisesRegex(ValueError, "JSON object"):
+                    page.main(["--repo", self.repo, "--template", str(template), "--output", str(output)])
+                self.assertEqual(output.read_text(), "Keep the working downloads.")
+
+    def test_invalid_manifest_requirement_preserves_existing_page(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary); output = root / "README.md"; output.write_text("Keep the working downloads.")
+            metadata = root / "latest.json"; metadata.write_text(json.dumps(self.release))
+            manifest = root / "manifest.json"; manifest.write_text(json.dumps({**self.manifest, "minimumMacOS": "14<script>"}))
+            template = root / "template.md"; template.write_text(self.template)
+            with self.assertRaisesRegex(ValueError, "minimum macOS"):
+                page.main(["--repo", self.repo, "--release-json", str(metadata), "--manifest-json", str(manifest),
+                           "--template", str(template), "--output", str(output)])
+            self.assertEqual(output.read_text(), "Keep the working downloads.")
 
     def test_mac_only_page_links_to_original_windows_version_and_immutable_archive(self):
         mac, manifest, windows = self.held_windows()
@@ -154,6 +207,7 @@ class DownloadPageTests(unittest.TestCase):
         result = page.render(mac, self.repo, template, manifest, windows)
         self.assertNotIn("{{", result)
         self.assertIn("Version 1.7.0", result)
+        self.assertIn("Build 20260928000100", result)
 
 
 if __name__ == "__main__":

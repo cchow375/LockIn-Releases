@@ -14,6 +14,13 @@ ROOT = Path(__file__).resolve().parent.parent
 REQUIRED_SUPPORT = {"appcast.xml", "windows-update.json", "windows-update.json.sig", "release.json", "SHA256SUMS.txt"}
 
 
+def minimum_macos(manifest):
+    version = manifest.get("minimumMacOS", "13") if manifest is not None else "13"
+    if not isinstance(version, str) or len(version) > 32 or not re.fullmatch(r"[1-9][0-9]*(?:\.[0-9]+){0,2}", version):
+        raise ValueError("Release manifest has an invalid minimum macOS version.")
+    return version
+
+
 def validate_repo(repo):
     if not re.fullmatch(r"[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+", repo):
         raise ValueError("Repository must be an owner/name pair.")
@@ -90,6 +97,7 @@ def render(release, repo, template, manifest=None, windows_release=None):
     values.update(VERSION=version, BUILD=build, RELEASE_URL=f"https://github.com/{repo}/releases/tag/{tag}")
     values.update(WINDOWS_VERSION=windows_version, WINDOWS_BUILD=windows_build,
                   WINDOWS_RELEASE_URL=f"https://github.com/{repo}/releases/tag/{windows_tag}")
+    values["MINIMUM_MACOS"] = minimum_macos(manifest)
     for key, value in values.items():
         template = template.replace("{{" + key + "}}", value)
     if "{{" in template or "}}" in template:
@@ -101,7 +109,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", default="cchow375/LockIn-Releases")
     parser.add_argument("--release-json", type=Path, help="Read a saved REST release response instead of GitHub.")
-    parser.add_argument("--manifest-json", type=Path, help="Read a saved release manifest for a Mac-only release.")
+    parser.add_argument("--manifest-json", type=Path, help="Read a saved release manifest; required with --release-json.")
     parser.add_argument("--windows-release-json", type=Path, help="Read REST metadata for the held Windows release.")
     parser.add_argument("--template", type=Path, default=ROOT / "(C) Download Page Template.md")
     parser.add_argument("--output", type=Path, required=True)
@@ -115,15 +123,17 @@ def main(argv=None):
     tag, version, build, assets = release_identity(release, args.repo)
     manifest = json.loads(args.manifest_json.read_text()) if args.manifest_json else None
     windows_release = json.loads(args.windows_release_json.read_text()) if args.windows_release_json else None
-    if manifest is None and f"LockIn-{version}-{build}-Windows-x64.zip" not in assets:
+    if manifest is None:
         if args.release_json:
-            raise ValueError("Saved Mac-only metadata also requires --manifest-json.")
+            raise ValueError("Saved release metadata also requires --manifest-json.")
         asset = checked_asset(assets, "release.json", args.repo, tag)
         with urllib.request.urlopen(asset["browser_download_url"], timeout=30) as response:
             content = response.read(1024 * 1024 + 1)
         if len(content) > 1024 * 1024:
             raise ValueError("Release manifest exceeds the size limit.")
         manifest = json.loads(content)
+    if not isinstance(manifest, dict):
+        raise ValueError("Release manifest must be a JSON object.")
     if isinstance(manifest, dict) and manifest.get("windowsCarryForward") is not None and windows_release is None:
         if args.release_json:
             raise ValueError("Saved Mac-only metadata also requires --windows-release-json.")
